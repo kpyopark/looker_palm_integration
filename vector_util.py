@@ -96,3 +96,14 @@ class VectorDatabase():
         raise e
       conn.commit()
     return results
+
+  def truncate_table(self):
+    with self.get_connection() as conn:
+      try:
+        with conn.cursor() as cur:
+          cur.execute(f"TRUNCATE TABLE rag_test")
+      except Exception as e:
+        print(e)
+        conn.rollback()
+        raise e
+      conn.commit()
