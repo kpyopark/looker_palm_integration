@@ -20,7 +20,7 @@ I suggest 4 different architectures to handle NL SQL conversion.
 All architecture has very similar issues and some issues can be solved by symantic layer supported by Looker. 
 
 
-## Direct Conversion. 
+## 1. Direct Conversion
 
 Direct Conversion is very efficient to convert NL to simple SQL - The important point here is that it is SQL that is simple, not a natural language query that is simple.
 
@@ -51,3 +51,37 @@ Overall architecture is below.
 [Implementation Example.](nl_to_sql1.ipynb)
 
 
+## 2. SQL to Natural Language & Search similar SQL
+
+Many companies already have a lot of analytic assets, such as pre-configured SQL queries. Even dashboards in BI tools often generate the same SQL queries and store them in the database. Marketing teams often use pre-defined segmentation rules, which can be modified by simply changing filter values. In these cases, SQL to NL & Search is a good approach.
+
+Especially, when the pre-defined SQLs are very complex and static, it's very useful
+
+For example,
+
+Question : "What are the five brands that are positioned as high-end in the swimwear and sportswear category ?"
+
+```SQL
+  with average_price_per_category as (
+    select category, average(retail_price) as average_price from products
+    group by category
+  ),
+  average_price_per_category_brand as (
+    select category, brand, average(retail_prince) as average_price from products
+    group by category, brand
+  ),
+  select a.average_price / b.average_price as price_ratio, brand
+    from average_price_per_category_brand a join average_price_per_category b on (a.category = b.cartegory)
+  where category in ('Swim', 'Suits & Sport Coats')
+  order by 1 desc 
+  limit 5
+
+```
+
+it's very difficult to suggest the guideline into LLM on prompt. 
+
+Overall architecture is very similar with direct conversion. But in this architecture crawls the SQL itself includes schema. 
+
+![alt Architecture image](resources/2.sql_to_nl_to_sql.png "Title")
+
+[Implementation Example.](nl_to_sql2.ipynb)
