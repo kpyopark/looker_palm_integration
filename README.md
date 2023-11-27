@@ -30,13 +30,19 @@ For example, (Case #1)
 
 "I want to see average salary in the 'construction' industry" - It's very simple natural language query. It's matching SQL might be the following. 
 
-"select average(salray) from salary_table where industry = 'construction' and year = '2023'"
+``` SQL
+  select average(salray) from salary_table where industry = 'construction' and year = '2023'
+```
 
 But, (Case #2)
 
 "I want to see average salary YoY trends in 3 years." - It's also very simple request. but it's matching SQL is very different. 
 
-"select average_salary / lag(1, average_salary) over (partition by registration_year order by registration_year asc) as salary_yoy from (select registration_year, average(salary) from salary_table where registration_year between '2020' and '2023') limit 3"
+```SQL
+  select average_salary / lag(1, average_salary) over (partition by registration_year order by registration_year asc) as salary_yoy 
+    from (select registration_year, average(salary) from salary_table where registration_year between '2020' and '2023') 
+  limit 3
+```
 
 It's very complex SQL. 
 
