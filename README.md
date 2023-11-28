@@ -91,3 +91,7 @@ Overall architecture is very similar with direct conversion. But in this archite
 ![alt Architecture image](resources/2.sql_to_nl_to_sql.png "Title")
 
 [Implementation Example.](nl_to_sql2.ipynb)
+
+## 3. NL to Looker Dashboard
+
+Looker Dashboard can show business reports in one page. 
