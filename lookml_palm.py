@@ -182,21 +182,27 @@ class LookMaker():
     return ""
 
   def decide_to_retrieve_values_for_the_filters(self) -> None:
-    output_sample = """
-    {
-      "required_target": ["field1","field2"]
-    }
-    """
-    prompt_template = """As a looker developer, decide whether to retrieve values for the filters below. 
-    For example, date / timestamp columns don't need to retrieve values. but string columns need to retrieve values from the database.
+    # output_sample = """
+    # {
+    #   "required_target": ["field1","field2"]
+    # }
+    # """
+    # prompt_template = """As a looker developer, decide whether to retrieve values for the filters below. 
+    # For example, date / timestamp columns don't need to retrieve values. but string columns need to retrieve values from the database.
 
-    filter fields : {filter_fields}
+    # filter fields : {filter_fields}
 
-    output sample : json array
-    {output_sample}
-    """
-    response = self.llm.predict(prompt_template.format(filter_fields=self.related_fields.filters, output_sample=output_sample))
-    self.retrieve_target_filters = self.parse_llm_response_to_retreive_target_filters(response)
+    # output sample : json array
+    # {output_sample}
+    # """
+    #response = self.llm.predict(prompt_template.format(filter_fields=self.related_fields.filters, output_sample=output_sample))
+    #self.retrieve_target_filters = self.parse_llm_response_to_retreive_target_filters(response)
+    required_target = []
+    for filter in self.related_fields.filters:
+      field_type = self.get_field_type(filter.field_name)
+      # if field_type == 'string':
+      required_target.append(filter.field_name)
+    self.retrieve_target_filters = LookerFilterRetrieves(required_target=required_target)
 
   def get_validated_filter_values_from_looker(self) -> None:
     choose_right_filter_value_list = []
@@ -367,7 +373,7 @@ class LookMaker():
       title=self.question+"4"))
     return new_look
 
-maker = LookMaker("생성일 기준 2022년으로, 산업 분류별 연금평균을 보여줘.")
+maker = LookMaker("2022년 10월 기준으로, 산업 대분류별 연금 총합을 보여줘.")
 
 look = maker.make_look()
 print(look.id)
