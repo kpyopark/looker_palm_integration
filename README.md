@@ -92,6 +92,35 @@ Overall architecture is very similar with direct conversion. But in this archite
 
 [Implementation Example.](nl_to_sql2.ipynb)
 
+
+
 ## 3. NL to Looker Dashboard
 
 Looker Dashboard can show business reports in one page. 
+
+Dashboard can describe its own business goal. 
+
+This architecture is very similar with type #2. Sql to NL & search. 
+
+
+
+## 4. NL to Looker View
+
+As you know LLM can leverage its capabilities with some hardened framework. (For example, LLMMath chain)
+
+Looker Query Maker is a kind of solution for this. 
+
+Looker can solve the following issues during converting NL to SQL.
+
+1. Business context suggestion
+  : Looker 'Explore' can expose the relationships between related tables. 
+
+2. Filter value adjustment
+  : Looker 'Filter' can solve various filter values and operators. 
+
+3. Complex Query generation
+  : Looker 'Dimension/Measure' attributes can solve complex SQL generation.
+
+If we could choice 'wanted' columns, Looker can make complex SQL via selected dimensions and Measures. 
+It's a very great feature for LLM to make SQL easily. 
+
