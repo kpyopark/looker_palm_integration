@@ -204,15 +204,22 @@ class LookMaker():
       required_target.append(filter.field_name)
     self.retrieve_target_filters = LookerFilterRetrieves(required_target=required_target)
 
+  # def get_value_list_from_json_array(self, json_array):
+  #   values = []
+  #   for json_object in json_array:
+  #     print(json_object)
+  #     values.append(list(json_object.values())[0])
+  #   return values
+
   def get_validated_filter_values_from_looker(self) -> None:
     choose_right_filter_value_list = []
     for retrieve_target_filter in self.retrieve_target_filters.required_target:
       #print(retrieve_target_filter)
       query_template = ml.WriteQuery(model=self.lookml_model, view=self.lookml_explore,fields=[retrieve_target_filter])
       query = self.sdk.create_query(query_template)
-      json_ = self.sdk.run_query(query.id, "json")
-      print(json_)
-      choose_right_filter_value_list.append({ retrieve_target_filter : json_})
+      # json_object = json.loads(self.sdk.run_query(query.id, "json"))
+      # choose_right_filter_value_list.append({ retrieve_target_filter : self.get_value_list_from_json_array(json_object)})
+      choose_right_filter_value_list.append({ retrieve_target_filter : self.sdk.run_query(query.id, "json")})
     self.retrieve_filter_and_values = choose_right_filter_value_list
 
   def parse_json_response(self, response) -> any:
@@ -243,6 +250,7 @@ class LookMaker():
     [filter_value1, filter_value2, ...]
     """
     response = self.llm.predict(prompt_template.format(example_json=example_json,filter_values=filter_values, wanted_value=wanted_value))
+    print("Choose Right Filter Value:" + response)
     return self.parse_json_response(response)
 
   def get_appropriate_filter_value_pair(self) -> None:
@@ -310,7 +318,7 @@ class LookMaker():
     looker_line - Line charts are useful when you want to show the changes in a value over time. They are also useful for comparing the changes in many categories over time.
     looker_area - Area charts are useful when you want to compare the trends of two or more values over time. They are also useful for showing the cumulative sum of values over time.
     looker_funnel - Funnel charts are useful to understand events in a sequential process, like prospect stages in a sales pipeline, engagement with a marketing campaign, or visitor movement through a website.
-    looker_pie - Pie charts are useful when you want to show the proportion of values to the total value. They are also useful for comparing the proportional differences between values.
+    looker_pie - Pie charts are useful when you want to show the proportion of values to the total value. They are also useful for comparing the proportional differences between values. Pivot fields are not allowed.
     looker_timeline - Timeline charts are useful when you want to show events over time. They are also useful for showing the duration of events. It needs at least 3 fields. 1. Event Name 2. Start Date 3. End Date
     looker_table - Table charts are useful when you want to show the values of multiple fields for multiple records. They are also useful for showing the values of multiple fields for a single record.
 
@@ -373,7 +381,7 @@ class LookMaker():
       title=self.question+"4"))
     return new_look
 
-maker = LookMaker("2022년 10월 기준으로, 산업 대분류별 연금 총합을 보여줘.")
+maker = LookMaker("2022년 1월부터 6월까지, 산업 대분류별 고용인원 감소 평균을 파이차트로 보여줘.")
 
 look = maker.make_look()
 print(look.id)

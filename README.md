@@ -124,3 +124,5 @@ Looker can solve the following issues during converting NL to SQL.
 If we could choice 'wanted' columns, Looker can make complex SQL via selected dimensions and Measures. 
 It's a very great feature for LLM to make SQL easily. 
 
+![alt Architecture image](resources/4.nl_to_look.png "Title")
+[Implementation Example.](lookml_explorer.ipynb)
