@@ -8,6 +8,8 @@ from langchain.output_parsers import PydanticOutputParser
 from langchain.pydantic_v1 import BaseModel, Field, validator
 from looker_sdk.sdk.api31 import models as ml
 from typing import cast, Dict, List, Union
+from vector_util import VectorDatabase
+from langchain.embeddings import VertexAIEmbeddings
 
 class LookerFilterValue(BaseModel):
   field_name: str = Field(description="field_name")
@@ -43,6 +45,8 @@ class LookMaker():
     self.filter_dict:Dict[str, str] = {}
     self.PROJECT_ID = os.getenv("PROJECT_ID")  # @param {type:"string"}
     self.location = "us-central1"
+    self.is_public_publishing = True
+    self.vdb = VectorDatabase()
     self.init_llm()
     self.init_sdk()
 
@@ -55,15 +59,39 @@ class LookMaker():
       top_p=0.8,
       top_k=40,
     )
+    self.embeddings = VertexAIEmbeddings()
   
   def init_sdk(self):
     # instantiate sdk
     self.sdk = looker_sdk.init31()
 
-  # TODO :
+  def write_navexplore_to_vdb(self, lookml_model):
+    for nav_explore in lookml_model.explores:
+      if(nav_explore.description is None):
+        continue 
+      description = nav_explore.description
+      desc_vector = self.embeddings.embed_query(description)
+      self.vdb.insert_record(sql=None, parameters=None, description=description, explore_view=nav_explore.name, model_name=lookml_model.name, table_name=None, column_schema=None, desc_vector=desc_vector)
+
+  def write_all_models_to_vdb(self):
+    for lookml_model in self.sdk.all_lookml_models():
+      self.write_navexplore_to_vdb(lookml_model)
+
   def choose_right_explore(self) -> None:
-    self.lookml_explore = "national_pension_mom"
-    self.lookml_model = "lookml_hol_sample"
+    # self.lookml_explore = "national_pension_mom"
+    # self.lookml_model = "lookml_hol_sample"
+    test_embedding =  self.embeddings.embed_query(self.question)
+    with self.vdb.get_connection() as conn:
+      try:
+        with conn.cursor() as cur:
+          select_record = (str(test_embedding).replace(' ',''),)
+          cur.execute(f"with tb_settings as (select %s::vector as compared_vec) SELECT model_name, explore_view, description, 1 - cosine_distance(desc_vector,compared_vec) as cosine_sim FROM rag_test, tb_settings where (1 - cosine_distance(desc_vector,compared_vec)) > 0.5 order by 4 desc limit 4", select_record)
+          result = cur.fetchone()
+          print(result[0], result[1], result[2], result[3])
+          return result[0], result[1]
+      except Exception as e:
+        print(e)
+    return None, None
 
   def get_schema_for_the_explore(self) -> None:
 
@@ -376,14 +404,16 @@ class LookMaker():
       description=self.question,
       deleted=False,
       is_run_on_load=True,
-      public=True,
+      public=self.is_public_publishing,
       folder_id=str(self.sdk.me().personal_folder_id),
       title=self.question+"4"))
     return new_look
 
-maker = LookMaker("2022년 1월부터 6월까지, 산업 대분류별 고용인원 감소 평균을 파이차트로 보여줘.")
 
-look = maker.make_look()
-print(look.id)
-print(look.short_url)
-print(look.url)
+if __name__ == "__main__":
+  maker = LookMaker("2022년, 산업 대분류별 평균 연금액수를 월별 테이블 차트로 보여줘.")
+
+  look = maker.make_look()
+  print(look.id)
+  print(look.short_url)
+  print(look.public_url)

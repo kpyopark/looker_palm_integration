@@ -1,23 +1,15 @@
 # NL to SQL.
 
-In the ERA of AI, many customers want to handle their data with natural language. Since DW era, many vendors have suggested their capabilities - easy use like natural language. But all was failed. 
+In the era of AI, natural language has become the preferred way for many users to interact with data. While DW vendors have long touted "easy-to-use" natural language interfaces, their efforts have largely fallen short.
 
-But with modern LLM, we could archieve the proper level of this capability - natural language to SQL. 
+However, the advent of modern Large Language Models (LLMs) offers a promising new avenue for achieving true natural language to SQL conversion. This paper proposes and compares four distinct architectures for tackling this challenge:
 
-I suggest 4 different architectures to handle NL SQL conversion. 
+1. Direct Conversion: This approach translates natural language queries directly into SQL statements.
+2. SQL to Natural Language & Search Similar SQL: This architecture first translates already-known SQLs into the natural language(intent), then searches for similar existing SQL queries.
+3. BI Dashboard Search (with Looker dashboard): This approach leverages existing BI dashboards and their description to understand the user's intent and find similar dashboard on Looker.
+4. NL to SQL Conversion via Semantic Layer (with Looker Semantic Layer): This architecture utilizes Looker's Semantic Layer to create a semantic representation of the data model, which facilitates accurate natural language to SQL conversion.
 
-
-1. Direct Conversion
-
-2. SQL to Natural Language & Search similar SQL
-
-3. BI Dashboard search (with Looker dashboard)
-
-4. NL to SQL conversion via symantic Layer (with Looker symantic layer)
-
-5. Step by Step approach
-
-All architecture has very similar issues and some issues can be solved by symantic layer supported by Looker. 
+While each architecture exhibits similar strengths and weaknesses, the Looker Semantic Layer offers unique capabilities that address many of the common challenges encountered in NL to SQL conversions. This paper provides a comprehensive analysis of these architectures and their respective advantages and limitations.
 
 
 ## 1. Direct Conversion
@@ -46,11 +38,9 @@ But, (Case #2)
 
 It's very complex SQL. 
 
-Direction conversion is very suitable for the case #1. 
+Direct conversion is ideal for simple cases (e.g., case #1). However, while providing additional instructions and guide prompts can assist the LLM in constructing more complex SQL queries, this approach often suffers from insufficient conversion accuracy and effectiveness across a broader range of cases.
 
-With more instructions and guides prompts can help LLM to make more complex SQLs but it's conversion ratio is not sufficient in many cases.
-
-Overall architecture is below. 
+The overall architecture is outlined below.
 
 ![alt Architecture image](resources/1.direct_conversion.png "Title")
 
@@ -59,9 +49,7 @@ Overall architecture is below.
 
 ## 2. SQL to Natural Language & Search similar SQL
 
-Many companies already have a lot of analytic assets, such as pre-configured SQL queries. Even dashboards in BI tools often generate the same SQL queries and store them in the database. Marketing teams often use pre-defined segmentation rules, which can be modified by simply changing filter values. In these cases, SQL to NL & Search is a good approach.
-
-Especially, when the pre-defined SQLs are very complex and static, it's very useful
+Many companies already possess valuable analytic resources like pre-configured SQL queries. Even BI dashboards often generate and store the same SQL queries. Marketing teams also frequently utilize pre-defined segmentation rules, easily modified by changing filter values. The SQL to NL & Search approach shines in these scenarios, particularly for highly complex and static pre-defined SQL queries.
 
 For example,
 
@@ -84,9 +72,10 @@ Question : "What are the five brands that are positioned as high-end in the swim
 
 ```
 
-it's very difficult to suggest the guideline into LLM on prompt. 
+In this case, providing clear guidelines to the LLM through prompts can be quite challenging.
+Instead of generating SQL, this approach focuses on selecting the most appropriate pre-defined query from the assets stored in the vector database and utilizing it directly.
 
-Overall architecture is very similar with direct conversion. But in this architecture crawls the SQL itself includes schema. 
+The overall architecture closely resembles the direct conversion approach, but with the key difference of crawling the actual SQL code, including schema information.
 
 ![alt Architecture image](resources/2.sql_to_nl_to_sql.png "Title")
 
