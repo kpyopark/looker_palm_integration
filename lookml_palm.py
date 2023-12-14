@@ -63,7 +63,8 @@ class LookMaker():
   
   def init_sdk(self):
     # instantiate sdk
-    self.sdk = looker_sdk.init31()
+    #self.sdk = looker_sdk.init31()
+    self.sdk = looker_sdk.init40()
 
   def write_navexplore_to_vdb(self, lookml_model):
     for nav_explore in lookml_model.explores:
@@ -88,13 +89,14 @@ class LookMaker():
           cur.execute(f"with tb_settings as (select %s::vector as compared_vec) SELECT model_name, explore_view, description, 1 - cosine_distance(desc_vector,compared_vec) as cosine_sim FROM rag_test, tb_settings where (1 - cosine_distance(desc_vector,compared_vec)) > 0.5 order by 4 desc limit 4", select_record)
           result = cur.fetchone()
           print(result[0], result[1], result[2], result[3])
-          return result[0], result[1]
+          self.lookml_model = result[0]
+          self.lookml_explore = result[1]
       except Exception as e:
         print(e)
     return None, None
 
   def get_schema_for_the_explore(self) -> None:
-
+    print(self.lookml_model + ":" + self.lookml_explore)
     # API Call to pull in metadata about fields in a particular explore
     explore = self.sdk.lookml_model_explore(
       lookml_model_name=self.lookml_model,
@@ -250,17 +252,22 @@ class LookMaker():
       choose_right_filter_value_list.append({ retrieve_target_filter : self.sdk.run_query(query.id, "json")})
     self.retrieve_filter_and_values = choose_right_filter_value_list
 
-  def parse_json_response(self, response) -> any:
-    #print('llm response:'+ response)
-    start_char = '['
-    end_char = ']'
-    if response.find('[') == -1 or response.find('{') < response.find('[') :
-      start_char = '{'
-      end_char = '}'
-    start_index = response.find(start_char)
-    end_index = response.rfind(end_char)
-    json_data = response[start_index:end_index+1]
-    parsed_json = json.loads(json_data)
+  def parse_json_response(self, llm_json_response) -> any:
+    parsed_json = None
+    try :
+      start_char = '['
+      end_char = ']'
+      if llm_json_response.find('[') == -1 or llm_json_response.find('{') < llm_json_response.find('[') :
+        start_char = '{'
+        end_char = '}'
+      start_index = llm_json_response.find(start_char)
+      end_index = llm_json_response.rfind(end_char)
+      json_data = llm_json_response[start_index:end_index+1]
+      json_data = json_data.replace('\\n', '')
+      parsed_json = json.loads(json_data)
+    except Exception as ex:
+      print(ex)
+      print("json parse error: " + json_data)
     return parsed_json
 
   def choose_right_filter_value(self, filter_values, wanted_value) -> any:
@@ -275,7 +282,6 @@ class LookMaker():
     wanted_values: {wanted_value}
 
     answer format: json array
-    [filter_value1, filter_value2, ...]
     """
     response = self.llm.predict(prompt_template.format(example_json=example_json,filter_values=filter_values, wanted_value=wanted_value))
     print("Choose Right Filter Value:" + response)
@@ -411,7 +417,7 @@ class LookMaker():
 
 
 if __name__ == "__main__":
-  maker = LookMaker("2022년, 산업 대분류별 평균 연금액수를 월별 테이블 차트로 보여줘.")
+  maker = LookMaker("22년 5월부터 6월까지 보건업 연금 납부 평균액을 월별 그래프로 보여줘")
 
   look = maker.make_look()
   print(look.id)
