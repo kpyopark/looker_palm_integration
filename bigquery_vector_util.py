@@ -1,16 +1,8 @@
 from typing import List
 from google.cloud import bigquery
-from dotenv import load_dotenv
 import os
 import json
 
-# Load environment variables from .env file
-load_dotenv()
-
-PROJECT_ID=os.getenv("PROJECT_ID")
-LOCATION=os.getenv("LOCATION")
-DATASET=os.getenv("DATASET")
-TABLE_NAME=os.getenv("TABLE_NAME")
 
 class SqlSearchSchema:
 
@@ -24,6 +16,17 @@ class SqlSearchSchema:
     self.column_schema = column_schema
     self.desc_vector = desc_vector
 
+  def to_dict(self):
+    return {
+      'sql': self.sql,
+      'description': self.description,
+      'parameters': self.parameters,
+      'explore_view': self.explore_view,
+      'model_name': self.model_name,
+      'table_name': self.table_name,
+      'column_schema': self.column_schema,
+      'desc_vector': self.desc_vector
+    }
 
 class BigQueryVectorDatabase():
 
@@ -33,10 +36,7 @@ class BigQueryVectorDatabase():
     self.project_id = project_id
     self.location = location
     self.bigquery_client = bigquery.Client(project=self.project_id, location=self.location)
-    self.table_ref = self.bigquery_client.table(self.dataset, self.table_name)
-
-  def get_connection(self):
-    return self.bigquery_client.open()
+    self.table_ref = self.bigquery_client.dataset(self.dataset).table(self.table_name)
 
   # Create a table in BigQuery)
 
@@ -55,45 +55,26 @@ class BigQueryVectorDatabase():
         .format(project_id=self.project_id, dataset=self.dataset, table_name=self.table_name)
       )
     print(query.to_dataframe())
-    query = self.bigquery_client.query(
-      """
-      """
+    errors = self.bigquery_client.query(
+      """CREATE VECTOR INDEX IF NOT EXISTS `{table_name}_desc_vector_idx` ON `{project_id}.{dataset}.{table_name}`(desc_vector) OPTIONS(index_type='IVF', distance_type='COSINE')
+      """.format(project_id=self.project_id, dataset=self.dataset, table_name=self.table_name)
     )
+    print(errors)
 
   def insert_record(self, insertRecords: List[SqlSearchSchema]) -> None:
-    self.bigquery_client.insert_rows_json(json.dumps(insertRecords))
+    records = [record.to_dict() for record in insertRecords]
+    result = self.bigquery_client.insert_rows_json(self.table_ref, records)
+    print(result)
   
   # Select a similar row from the table
   def select_similar_query(self, desc_vector):
-
-    with self.get_connection() as conn:
-      try:
-        with conn.cursor() as cur:
-          select_record = ((desc_vector,))
-          cur.execute(f"SELECT sql, description, parameters, explore_view, model_name, table_name, column_schema FROM rag_test ORDER BY desc_vector <-> %s LIMIT 1", select_record)
-          return cur.fetchone()
-      except Exception as e:
-        print(e)
-        conn.rollback()
-        raise e
-      conn.commit()
+    pass
 
   def find_related_tables(self, desc_vector, consine_similarity_threshold):
-    results = []
-    with self.get_connection() as conn:
-      try:
-        with conn.cursor() as cur:
-          select_record = ((desc_vector, consine_similarity_threshold))
-          cur.execute(f"SELECT sql, description, parameters, explore_view, model_name, table_name, column_schema FROM rag_test WHERE (1 - (desc_vector <=> %s)) < %s", select_record)
-          for row in cur.fetchall():
-            results.append(row)
-      except Exception as e:
-        print(e)
-        conn.rollback()
-        raise e
-      conn.commit()
-    return results
-  
-vdb = BigQueryVectorDatabase(PROJECT_ID, LOCATION, DATASET, TABLE_NAME)
-vdb.create_table()
+    pass
+
+if __name__ == "__main__":
+  vdb = BigQueryVectorDatabase(PROJECT_ID, LOCATION, DATASET, TABLE_NAME)
+  vdb.create_table()
+
 
